@@ -19,7 +19,7 @@ html5lib==0.9999999       # via bleach, tensorflow-tensorboard
 idna==2.7                 # via requests
 inflection==0.3.1         # via connexion
 itsdangerous==0.24        # via flask
-jinja2==2.10              # via flask
+jinja2==2.10.1              # via flask
 jsonschema==2.6.0         # via connexion, swagger-spec-validator
 markdown==2.6.11          # via tensorflow-tensorboard
 markupsafe==1.0           # via jinja2
@@ -27,12 +27,12 @@ numpy==1.15.0
 pandas==0.23.2
 protobuf==3.6.1           # via tensorflow, tensorflow-tensorboard
 python-dateutil==2.7.3    # via botocore
-pyyaml==3.13              # via clickclick, connexion, swagger-spec-validator
-requests==2.19.1          # via connexion
+pyyaml==4.2b1              # via clickclick, connexion, swagger-spec-validator
+requests==2.20.0           # via connexion
 scipy==1.1.0
 six==1.11.0               # via bleach, connexion, edward, flask-cors, html5lib, protobuf, python-dateutil, swagger-spec-validator, tensorflow, tensorflow-tensorboard
 swagger-spec-validator==2.3.1  # via connexion
-urllib3==1.23             # via requests
+urllib3==1.24.2             # via requests
 werkzeug==0.14.1          # via flask, tensorflow-tensorboard
 wheel==0.31.1             # via tensorflow, tensorflow-tensorboard
 codecov
