@@ -1,0 +1,209 @@
+apiVersion: v1
+kind: Template
+labels:
+  template: bayesian-api
+metadata:
+  name: bayesian-api
+  annotations:
+    description: bayesian-api
+objects:
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    labels:
+      service: bayesian-api
+    name: bayesian-api
+  spec:
+    selector:
+      service: bayesian-api
+    template:
+      metadata:
+        labels:
+          service: bayesian-api
+      spec:
+        containers:
+        - env:
+          - name: BAYESIAN_COMPONENT_TAGGED_COUNT
+            value: "2"
+          - name: COMPONENT_ANALYSES_LIMIT
+            value: ${COMPONENT_ANALYSES_LIMIT}
+          - name: DEPLOYMENT_PREFIX
+            valueFrom:
+              configMapKeyRef:
+                name: bayesian-config
+                key: deployment-prefix
+          - name: WORKER_ADMINISTRATION_REGION
+            value: "api"
+          - name: F8_API_BACKBONE_HOST
+            value: "http://f8a-server-backbone:5000"
+          - name: FUTURES_SESSION_WORKER_COUNT
+            value: "100"
+          - name: PGBOUNCER_SERVICE_HOST
+            value: bayesian-pgbouncer
+          - name: OSIO_AUTH_URL
+            valueFrom:
+              configMapKeyRef:
+                name: bayesian-config
+                key: auth-url
+          - name: BAYESIAN_FETCH_PUBLIC_KEY
+            valueFrom:
+              configMapKeyRef:
+                name: bayesian-config
+                key: auth-url
+          - name: FABRIC8_ANALYTICS_JWT_AUDIENCE
+            value: "fabric8-online-platform,openshiftio-public,https://prod-preview.openshift.io,https://openshift.io"
+          - name: SENTRY_DSN
+            valueFrom:
+              secretKeyRef:
+                name: worker
+                key: sentry_dsn
+          - name: INVOKE_API_WORKERS
+            value: "1"
+          - name: SHOW_TRANSITIVE_REPORT
+            value: ${SHOW_TRANSITIVE_REPORT}
+          - name: POSTGRESQL_DATABASE
+            valueFrom:
+              secretKeyRef:
+                name: coreapi-postgres
+                key: database
+          - name: POSTGRESQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: coreapi-postgres
+                key: password
+          - name: POSTGRESQL_USER
+            valueFrom:
+              secretKeyRef:
+                name: coreapi-postgres
+                key: username
+          - name: AWS_SQS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: aws
+                key: sqs-access-key-id
+          - name: AWS_SQS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: aws
+                key: sqs-secret-access-key
+          - name: AWS_S3_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+               name: aws
+               key: s3-access-key-id
+          - name: AWS_S3_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: aws
+                key: s3-secret-access-key
+          - name: THREESCALE_ACCOUNT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: 3scale
+                key: three_scale_account_secret
+          - name: FLASK_LOGGING_LEVEL
+            value: ${FLASK_LOGGING_LEVEL}
+          image: "${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${IMAGE_TAG}"
+          name: bayesian-api
+          ports:
+          - containerPort: 5000
+            protocol: TCP
+          livenessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 60
+            timeoutSeconds: 10
+            failureThreshold: 3
+            successThreshold: 1
+            tcpSocket:
+              port: 5000
+          readinessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 60
+            failureThreshold: 3
+            successThreshold: 1
+            tcpSocket:
+              port: 5000
+            timeoutSeconds: 10
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1024Mi"
+              cpu: "1000m"
+        restartPolicy: Always
+    test: false
+    triggers:
+    - type: ConfigChange
+    replicas: ${{REPLICAS}}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      service: bayesian-api
+    name: bayesian-api
+  spec:
+    ports:
+    - name: "32000"
+      port: 32000
+      protocol: TCP
+      targetPort: 5000
+    selector:
+      service: bayesian-api
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: bayesian-api
+  spec:
+    host: ${BAYESIAN_API_HOSTNAME}
+    to:
+      kind: Service
+      name: bayesian-api
+
+parameters:
+- description: A hostname where the Bayesian API should be exposed (will be auto-generated if empty)
+  displayName: Bayesian API hostname
+  required: false
+  name: BAYESIAN_API_HOSTNAME
+
+- description: Docker registry where the image is
+  displayName: Docker registry
+  required: true
+  name: DOCKER_REGISTRY
+  value: "quay.io"
+
+- description: Docker image to use
+  displayName: Docker image
+  required: true
+  name: DOCKER_IMAGE
+  value: "openshiftio/bayesian-bayesian-api"
+
+- description: Image tag
+  displayName: Image tag
+  required: true
+  name: IMAGE_TAG
+  value: "latest"  # image-tag
+
+- description: Number of deployment replicas
+  displayName: Number of deployment replicas
+  required: true
+  name: REPLICAS
+  value: "1"
+
+- description: Number of dependencies allowed in one component analyses call
+  displayName: Number of dependencies allowed in one component analyses call
+  required: true
+  name: COMPONENT_ANALYSES_LIMIT
+  value: "10"
+
+- description: "Flask logging level (see: https://docs.python.org/3/library/logging.html#levels)"
+  displayName: Flask logging level
+  required: false
+  name: FLASK_LOGGING_LEVEL
+  value: "WARNING"
+
+- description: Flag to enable or disable the transitive report from stack report
+  displayName: SHOW TRANSITIVE REPORT
+  required: true
+  name: SHOW_TRANSITIVE_REPORT
+  value: "false"
